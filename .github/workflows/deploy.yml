@@ -1,0 +1,153 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Build backend
+        working-directory: ./backend
+        run: npm run build
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: Upload backend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: backend/dist
+          retention-days: 1
+
+      - name: Upload frontend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/build
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download backend artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-dist
+          path: backend/dist
+
+      - name: Download frontend artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/build
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            echo "🚀 Starting deployment..."
+            
+            # Navigate to project directory
+            cd /var/www/sms
+            
+            # Pull latest code
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # Backend deployment
+            echo "📦 Installing backend dependencies..."
+            cd backend
+            npm ci --production
+            
+            echo "🔨 Building backend..."
+            npm run build
+            
+            # Restart backend with PM2
+            echo "🔄 Restarting backend..."
+            pm2 restart sms-backend || pm2 start dist/server.js --name sms-backend
+            
+            # Frontend deployment
+            echo "📦 Installing frontend dependencies..."
+            cd ../frontend
+            npm ci
+            
+            echo "🔨 Building frontend..."
+            npm run build
+            
+            # Serve frontend with PM2
+            echo "🔄 Restarting frontend..."
+            pm2 delete sms-frontend 2>/dev/null || true
+            pm2 serve build 3000 --name sms-frontend --spa
+            
+            # Save PM2 configuration
+            pm2 save
+            
+            echo "✅ Deployment complete!"
+
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            echo "📊 PM2 Status:"
+            pm2 status
+            
+            echo ""
+            echo "🔍 Backend health check:"
+            sleep 5
+            curl -s http://localhost:5000/api/health || echo "Backend is starting..."
+            
+            echo ""
+            echo "🔍 Frontend check:"
+            curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "Frontend is starting..."
+
+      - name: Notify on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          script: |
+            echo "❌ Deployment failed! Checking logs..."
+            pm2 logs --lines 50

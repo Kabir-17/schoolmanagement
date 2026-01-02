@@ -1,0 +1,638 @@
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { apiService } from "@/services";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Search,
+  DollarSign,
+  AlertCircle,
+  Check,
+  Receipt,
+  Calendar,
+  User,
+  TrendingUp,
+  Download,
+  AlertTriangle,
+} from "lucide-react";
+
+interface Student {
+  _id: string;
+  studentId: string;
+  fullName: string;
+  grade: string;
+  rollNumber: string;
+}
+
+interface FeeStatus {
+  student: Student;
+  feeRecord: any;
+  upcomingDue?: {
+    month: number;
+    amount: number;
+    dueDate: Date;
+  };
+  recentTransactions: any[];
+}
+
+const AccountantFeeCollection: React.FC = () => {
+  // const { user } = useAuth(); // Reserved for future use
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // Student search
+  const [studentId, setStudentId] = useState("");
+  const [student, setStudent] = useState<Student | null>(null);
+  const [feeStatus, setFeeStatus] = useState<FeeStatus | null>(null);
+
+  // Fee collection form
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [amount, setAmount] = useState<number>(0);
+  const [paymentMethod, setPaymentMethod] = useState("CASH");
+  const [remarks, setRemarks] = useState("");
+  const [warnings, setWarnings] = useState<string[]>([]);
+
+  // Receipt
+  const [receipt, setReceipt] = useState<any>(null);
+
+  // Daily summary
+  const [dailySummary, setDailySummary] = useState<any>(null);
+
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const paymentMethods = ["CASH", "CARD", "UPI", "NET_BANKING", "CHEQUE", "DD", "BANK_TRANSFER"];
+
+  // Format currency
+  const formatCurrency = (amt: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(amt);
+  };
+
+  // Search student
+  const handleSearchStudent = async () => {
+    if (!studentId.trim()) {
+      setError("Please enter a student ID");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      setWarnings([]);
+      setFeeStatus(null);
+      setStudent(null);
+
+      const response = await searchStudent(studentId.trim());
+      setStudent(response.data);
+
+      // Fetch fee status
+      const statusResponse = await getStudentFeeStatus(response.data._id);
+      setFeeStatus(statusResponse.data);
+
+      // Set default amount if upcoming due exists
+      if (statusResponse.data.upcomingDue) {
+        setAmount(statusResponse.data.upcomingDue.amount);
+        setSelectedMonth(statusResponse.data.upcomingDue.month);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Student not found");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Validate fee collection
+  const handleValidate = async () => {
+    if (!student) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+      setWarnings([]);
+
+      const response = await validateFeeCollection({
+        studentId: student._id,
+        month: selectedMonth,
+        amount: amount,
+      });
+
+      setWarnings(response.data.warnings);
+
+      if (!response.data.canProceed) {
+        setError("Cannot proceed with fee collection. Please check the warnings.");
+      } else {
+        setSuccess("Validation successful! You can proceed with collection.");
+        setTimeout(() => setSuccess(null), 3000);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Validation failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Collect fee
+  const handleCollectFee = async () => {
+    if (!student) return;
+
+    if (!amount || amount <= 0) {
+      setError("Please enter a valid amount");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await collectFee({
+        studentId: student._id,
+        month: selectedMonth,
+        amount: amount,
+        paymentMethod: paymentMethod,
+        remarks: remarks,
+      });
+
+      setSuccess("Fee collected successfully!");
+      setReceipt(response.data.transaction);
+
+      // Refresh fee status
+      const statusResponse = await getStudentFeeStatus(student._id);
+      setFeeStatus(statusResponse.data);
+
+      // Reset form
+      setAmount(0);
+      setRemarks("");
+      setWarnings([]);
+
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to collect fee");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch daily summary
+  const handleFetchDailySummary = async () => {
+    try {
+      setLoading(true);
+      const response = await getDailyCollectionSummary();
+      setDailySummary(response.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to fetch daily summary");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Print receipt
+  const handlePrintReceipt = () => {
+    window.print();
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Fee Collection</h1>
+          <p className="text-gray-500 mt-1">Search student and collect fees</p>
+        </div>
+        <Button onClick={handleFetchDailySummary} variant="outline" className="gap-2">
+          <TrendingUp className="h-5 w-5" />
+          Today's Summary
+        </Button>
+      </div>
+
+      {/* Alerts */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {success && (
+        <Alert className="bg-green-50 text-green-800 border-green-200">
+          <Check className="h-4 w-4" />
+          <AlertDescription>{success}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Student Search */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Search Student</CardTitle>
+          <CardDescription>Enter student ID to view fee status</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={studentId}
+              onChange={(e) => setStudentId(e.target.value)}
+              onKeyPress={(e) => e.key === "Enter" && handleSearchStudent()}
+              placeholder="Enter Student ID"
+              className="flex-1 px-4 py-2 border rounded-lg"
+            />
+            <Button onClick={handleSearchStudent} disabled={loading} className="gap-2">
+              <Search className="h-5 w-5" />
+              Search
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Student Info & Fee Status */}
+      {student && feeStatus && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Student Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Student Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Student ID:</span>
+                <span className="font-semibold">{student.studentId}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Name:</span>
+                <span className="font-semibold">{student.fullName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Grade:</span>
+                <span className="font-semibold">{student.grade}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Roll Number:</span>
+                <span className="font-semibold">{student.rollNumber}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Fee Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Fee Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {feeStatus.feeRecord && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Expected:</span>
+                    <span className="font-semibold">
+                      {formatCurrency(feeStatus.feeRecord.totalExpected)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Paid:</span>
+                    <span className="font-semibold text-green-600">
+                      {formatCurrency(feeStatus.feeRecord.totalPaid)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Remaining:</span>
+                    <span className="font-semibold text-red-600">
+                      {formatCurrency(feeStatus.feeRecord.totalRemaining)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Overall Status:</span>
+                    <span
+                      className={`font-semibold px-2 py-1 rounded text-xs ${
+                        feeStatus.feeRecord.overallStatus === "paid"
+                          ? "bg-green-100 text-green-800"
+                          : feeStatus.feeRecord.overallStatus === "pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {feeStatus.feeRecord.overallStatus.toUpperCase()}
+                    </span>
+                  </div>
+                </>
+              )}
+
+              {feeStatus.upcomingDue && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm font-medium text-yellow-800 mb-1">
+                    Upcoming Due
+                  </p>
+                  <div className="flex justify-between text-sm">
+                    <span>Month: {months[feeStatus.upcomingDue.month - 1]}</span>
+                    <span className="font-semibold">
+                      {formatCurrency(feeStatus.upcomingDue.amount)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Fee Collection Form */}
+      {student && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Collect Fee Payment</CardTitle>
+            <CardDescription>Enter payment details to collect fee</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Month Selection */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Month *</label>
+                <Select
+                  value={selectedMonth.toString()}
+                  onValueChange={(value) => setSelectedMonth(Number(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {months.map((month, index) => (
+                      <SelectItem key={index + 1} value={(index + 1).toString()}>
+                        {month}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Amount */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Amount *</label>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(Number(e.target.value))}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  placeholder="Enter amount"
+                  min="0"
+                />
+              </div>
+
+              {/* Payment Method */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Payment Method *
+                </label>
+                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paymentMethods.map((method) => (
+                      <SelectItem key={method} value={method}>
+                        {method.replace("_", " ")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Remarks */}
+              <div>
+                <label className="block text-sm font-medium mb-2">Remarks</label>
+                <input
+                  type="text"
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  placeholder="Optional remarks"
+                />
+              </div>
+            </div>
+
+            {/* Warnings */}
+            {warnings.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {warnings.map((warning, index) => (
+                  <Alert key={index} className="bg-yellow-50 border-yellow-200">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                    <AlertDescription className="text-yellow-800">
+                      {warning}
+                    </AlertDescription>
+                  </Alert>
+                ))}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 mt-6">
+              <Button
+                onClick={handleValidate}
+                variant="outline"
+                disabled={loading}
+                className="flex-1"
+              >
+                <AlertCircle className="h-4 w-4 mr-2" />
+                Validate
+              </Button>
+              <Button
+                onClick={handleCollectFee}
+                disabled={loading}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                <DollarSign className="h-4 w-4 mr-2" />
+                Collect Fee
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Receipt */}
+      {receipt && (
+        <Card className="print:shadow-none">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Receipt className="h-5 w-5" />
+                Payment Receipt
+              </span>
+              <Button onClick={handlePrintReceipt} variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Print
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 space-y-4">
+              <div className="text-center border-b pb-4">
+                <h2 className="text-2xl font-bold">Fee Receipt</h2>
+                <p className="text-sm text-gray-600">Receipt No: {receipt.receiptNumber}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Student Name</p>
+                  <p className="font-semibold">{student?.fullName}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Student ID</p>
+                  <p className="font-semibold">{student?.studentId}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Date</p>
+                  <p className="font-semibold">
+                    {new Date(receipt.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Payment Method</p>
+                  <p className="font-semibold">{receipt.paymentMethod}</p>
+                </div>
+              </div>
+
+              <div className="bg-green-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600">Amount Paid</p>
+                <p className="text-3xl font-bold text-green-700">
+                  {formatCurrency(receipt.amount)}
+                </p>
+              </div>
+
+              {receipt.remarks && (
+                <div>
+                  <p className="text-sm text-gray-600">Remarks</p>
+                  <p className="text-sm">{receipt.remarks}</p>
+                </div>
+              )}
+
+              <div className="text-center text-xs text-gray-500 mt-4 pt-4 border-t">
+                Thank you for your payment!
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Daily Summary Modal */}
+      {dailySummary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Today's Collection Summary
+                </span>
+                <Button
+                  onClick={() => setDailySummary(null)}
+                  variant="outline"
+                  size="sm"
+                >
+                  Close
+                </Button>
+              </CardTitle>
+              <CardDescription>
+                {new Date(dailySummary.date).toLocaleDateString()}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600">Total Collections</p>
+                  <p className="text-2xl font-bold text-blue-700">
+                    {dailySummary.totalCollections}
+                  </p>
+                </div>
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600">Total Amount</p>
+                  <p className="text-2xl font-bold text-green-700">
+                    {formatCurrency(dailySummary.totalAmount)}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-2">By Payment Method</h3>
+                <div className="space-y-2">
+                  {Object.entries(dailySummary.byPaymentMethod || {}).map(
+                    ([method, data]: [string, any]) => (
+                      <div
+                        key={method}
+                        className="flex justify-between items-center p-2 bg-gray-50 rounded"
+                      >
+                        <span className="text-sm">{method.replace("_", " ")}</span>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold">
+                            {formatCurrency(data.amount)}
+                          </p>
+                          <p className="text-xs text-gray-600">{data.count} transactions</p>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-2">By Grade</h3>
+                <div className="space-y-2">
+                  {Object.entries(dailySummary.byGrade || {}).map(
+                    ([grade, data]: [string, any]) => (
+                      <div
+                        key={grade}
+                        className="flex justify-between items-center p-2 bg-gray-50 rounded"
+                      >
+                        <span className="text-sm">Grade {grade}</span>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold">
+                            {formatCurrency(data.amount)}
+                          </p>
+                          <p className="text-xs text-gray-600">{data.count} students</p>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AccountantFeeCollection;

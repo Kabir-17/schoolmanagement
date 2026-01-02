@@ -1,0 +1,867 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import {
+  Calendar,
+  Clock,
+  BookOpen,
+  Users,
+  MapPin,
+  Activity,
+  TrendingUp,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
+import { toast } from "sonner";
+import { teacherApi } from "../../services/teacher.api";
+
+interface TeacherScheduleData {
+  teacher: {
+    id: string;
+    teacherId: string;
+    name: string;
+    subjects: string[];
+    grades: number[];
+    sections: string[];
+    designation: string;
+    isClassTeacher: boolean;
+    classTeacherFor?: {
+      grade: number;
+      section: string;
+    };
+  };
+  weeklySchedule: {
+    [key: string]: ScheduleEntry[];
+  };
+  todaySchedule: ScheduleEntry[];
+  currentPeriod?: ScheduleEntry;
+  nextPeriod?: ScheduleEntry;
+  statistics: {
+    totalPeriodsPerWeek: number;
+    uniqueSubjects: number;
+    uniqueClasses: number;
+    averagePeriodsPerDay: number;
+    busyDays: number;
+  };
+}
+
+interface ScheduleEntry {
+  scheduleId: string;
+  grade: number;
+  section: string;
+  className: string;
+  periodNumber: number;
+  startTime: string;
+  endTime: string;
+  subject: {
+    id: string;
+    name: string;
+    code: string;
+  };
+  roomNumber?: string;
+  venue?: string;
+  duration: number;
+}
+
+const TeacherScheduleView: React.FC = () => {
+  const [scheduleData, setScheduleData] = useState<TeacherScheduleData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'weekly' | 'today' | 'statistics'>('weekly');
+
+  useEffect(() => {
+    loadScheduleData();
+    const interval = setInterval(loadScheduleData, 60000); // Refresh every minute
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadScheduleData = async () => {
+    try {
+      setLoading(true);
+      const response = await teacherApi.getTeacherSchedule();
+      if (response.data.success) {
+        setScheduleData(response.data.data);
+      }
+    } catch (error: any) {
+      console.error("Failed to load schedule data:", error);
+      toast.error("Failed to load schedule data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatTime = (timeString: string) => {
+    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const daysOfWeek = [
+    { key: 'monday', label: 'Monday', short: 'Mon' },
+    { key: 'tuesday', label: 'Tuesday', short: 'Tue' },
+    { key: 'wednesday', label: 'Wednesday', short: 'Wed' },
+    { key: 'thursday', label: 'Thursday', short: 'Thu' },
+    { key: 'friday', label: 'Friday', short: 'Fri' },
+    { key: 'saturday', label: 'Saturday', short: 'Sat' },
+  ];
+
+  const getCurrentDayStatus = () => {
+    const today = new Date();
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const todayName = dayNames[today.getDay()];
+    return todayName;
+  };
+
+  const isCurrentPeriod = (period: ScheduleEntry) => {
+    if (!scheduleData?.currentPeriod) return false;
+    return scheduleData.currentPeriod.scheduleId === period.scheduleId && 
+           scheduleData.currentPeriod.periodNumber === period.periodNumber;
+  };
+
+  const isNextPeriod = (period: ScheduleEntry) => {
+    if (!scheduleData?.nextPeriod) return false;
+    return scheduleData.nextPeriod.scheduleId === period.scheduleId && 
+           scheduleData.nextPeriod.periodNumber === period.periodNumber;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading your schedule...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!scheduleData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="text-center py-12">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Schedule Available</h3>
+            <p className="text-gray-600 mb-6">Your schedule could not be loaded.</p>
+            <Button onClick={loadScheduleData} className="bg-blue-600 hover:bg-blue-700">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      <div className="p-8 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              My Schedule
+            </h1>
+            <div className="space-y-1">
+              <p className="text-lg text-gray-600">Welcome, {scheduleData.teacher.name}</p>
+              <p className="text-sm text-gray-500">
+                {scheduleData.teacher.designation} • Teacher ID: {scheduleData.teacher.teacherId}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant={viewMode === 'today' ? 'default' : 'outline'}
+              onClick={() => setViewMode('today')}
+              className={`${
+                viewMode === 'today' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-white border-blue-200 text-blue-700 hover:bg-blue-50'
+              } shadow-sm`}
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              Today
+            </Button>
+            <Button
+              variant={viewMode === 'weekly' ? 'default' : 'outline'}
+              onClick={() => setViewMode('weekly')}
+              className={`${
+                viewMode === 'weekly' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-white border-blue-200 text-blue-700 hover:bg-blue-50'
+              } shadow-sm`}
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Weekly
+            </Button>
+            <Button
+              variant={viewMode === 'statistics' ? 'default' : 'outline'}
+              onClick={() => setViewMode('statistics')}
+              className={`${
+                viewMode === 'statistics' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-white border-blue-200 text-blue-700 hover:bg-blue-50'
+              } shadow-sm`}
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Statistics
+            </Button>
+            <Button
+              variant="outline"
+              onClick={loadScheduleData}
+              className="bg-white border-gray-200 hover:bg-gray-50 shadow-sm"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-100 text-sm">Total Classes</p>
+                  <p className="text-2xl font-bold">{scheduleData.statistics.uniqueClasses}</p>
+                </div>
+                <Users className="h-8 w-8 text-blue-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-green-100 text-sm">Subjects</p>
+                  <p className="text-2xl font-bold">{scheduleData.statistics.uniqueSubjects}</p>
+                </div>
+                <BookOpen className="h-8 w-8 text-green-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-100 text-sm">Weekly Periods</p>
+                  <p className="text-2xl font-bold">{scheduleData.statistics.totalPeriodsPerWeek}</p>
+                </div>
+                <Activity className="h-8 w-8 text-purple-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-orange-100 text-sm">Avg/Day</p>
+                  <p className="text-2xl font-bold">{scheduleData.statistics.averagePeriodsPerDay}</p>
+                </div>
+                <Calendar className="h-8 w-8 text-orange-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-0">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-indigo-100 text-sm">Active Days</p>
+                  <p className="text-2xl font-bold">{scheduleData.statistics.busyDays}</p>
+                </div>
+                <CheckCircle className="h-8 w-8 text-indigo-200" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Current Period Alert */}
+        {scheduleData.currentPeriod && (
+          <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-emerald-100 rounded-full">
+                  <Clock className="h-6 w-6 text-emerald-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-emerald-800">Current Period</h3>
+                  <div className="flex items-center gap-6 mt-1">
+                    <p className="text-emerald-700">
+                      <span className="font-medium">{scheduleData.currentPeriod.subject.name}</span> - {scheduleData.currentPeriod.className}
+                    </p>
+                    <p className="text-emerald-600 text-sm">
+                      {formatTime(scheduleData.currentPeriod.startTime)} - {formatTime(scheduleData.currentPeriod.endTime)}
+                    </p>
+                    {scheduleData.currentPeriod.venue && (
+                      <p className="text-emerald-600 text-sm flex items-center">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        {scheduleData.currentPeriod.venue}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Next Period Alert */}
+        {scheduleData.nextPeriod && (
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-blue-100 rounded-full">
+                  <Clock className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-blue-800">Next Period</h3>
+                  <div className="flex items-center gap-6 mt-1">
+                    <p className="text-blue-700">
+                      <span className="font-medium">{scheduleData.nextPeriod.subject.name}</span> - {scheduleData.nextPeriod.className}
+                    </p>
+                    <p className="text-blue-600 text-sm">
+                      {formatTime(scheduleData.nextPeriod.startTime)} - {formatTime(scheduleData.nextPeriod.endTime)}
+                    </p>
+                    {scheduleData.nextPeriod.venue && (
+                      <p className="text-blue-600 text-sm flex items-center">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        {scheduleData.nextPeriod.venue}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Main Content */}
+        {viewMode === 'weekly' && (
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+            <CardHeader className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-t-lg">
+              <CardTitle className="text-xl font-semibold">Weekly Schedule</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="overflow-x-auto rounded-lg shadow-inner">
+                <table className="w-full border-collapse border border-gray-200 rounded-lg overflow-hidden">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-gray-50 to-blue-50">
+                      <th className="border border-gray-200 p-4 text-left font-semibold text-gray-700">
+                        Time
+                      </th>
+                      {daysOfWeek.map((day) => (
+                        <th
+                          key={day.key}
+                          className={`border border-gray-200 p-4 text-left font-semibold ${
+                            getCurrentDayStatus() === day.key 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'text-gray-700'
+                          }`}
+                        >
+                          {day.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Generate time slots based on periods */}
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((periodNum) => (
+                      <tr key={periodNum} className="hover:bg-blue-50/50 transition-colors">
+                        <td className="border border-gray-200 p-4 font-medium bg-gradient-to-r from-gray-50 to-blue-50 text-gray-700">
+                          Period {periodNum}
+                        </td>
+                        {daysOfWeek.map((day) => {
+                          const period = scheduleData.weeklySchedule[day.key]?.find(
+                            (p) => p.periodNumber === periodNum
+                          );
+
+                          return (
+                            <td
+                              key={`${day.key}-${periodNum}`}
+                              className={`border border-gray-200 p-4 ${
+                                getCurrentDayStatus() === day.key ? 'bg-blue-50/30' : ''
+                              } ${
+                                period && isCurrentPeriod(period) ? 'bg-emerald-100 border-emerald-300' : ''
+                              } ${
+                                period && isNextPeriod(period) ? 'bg-blue-100 border-blue-300' : ''
+                              }`}
+                            >
+                              {period ? (
+                                <div className="text-sm space-y-1">
+                                  <div className="font-semibold text-gray-800">
+                                    📚 {period.subject.name}
+                                  </div>
+                                  <div className="text-blue-600 font-medium">
+                                    🎓 {period.className}
+                                  </div>
+                                  <div className="text-gray-500 text-xs">
+                                    ⏰ {formatTime(period.startTime)} - {formatTime(period.endTime)}
+                                  </div>
+                                  {period.venue && (
+                                    <div className="text-purple-600 text-xs font-medium">
+                                      📍 {period.venue}
+                                    </div>
+                                  )}
+                                  <div className="text-gray-400 text-xs">
+                                    {period.duration} mins
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="text-gray-400 text-sm text-center">
+                                  Free
+                                </div>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {viewMode === 'today' && (
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+            <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
+              <CardTitle className="text-xl font-semibold">Today's Schedule</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {scheduleData.todaySchedule.length > 0 ? (
+                <div className="space-y-4">
+                  {scheduleData.todaySchedule.map((period, index) => (
+                    <Card
+                      key={`${period.scheduleId}-${period.periodNumber}`}
+                      className={`transition-all duration-300 ${
+                        isCurrentPeriod(period)
+                          ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-300 shadow-lg'
+                          : isNextPeriod(period)
+                          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-300 shadow-md'
+                          : 'bg-gray-50 border-gray-200 hover:shadow-md'
+                      }`}
+                    >
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-full ${
+                              isCurrentPeriod(period)
+                                ? 'bg-emerald-100'
+                                : isNextPeriod(period)
+                                ? 'bg-blue-100'
+                                : 'bg-gray-100'
+                            }`}>
+                              <BookOpen className={`h-6 w-6 ${
+                                isCurrentPeriod(period)
+                                  ? 'text-emerald-600'
+                                  : isNextPeriod(period)
+                                  ? 'text-blue-600'
+                                  : 'text-gray-600'
+                              }`} />
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-800">
+                                {period.subject.name}
+                              </h3>
+                              <p className="text-blue-600 font-medium">
+                                {period.className}
+                              </p>
+                              <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+                                <span className="flex items-center">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  {formatTime(period.startTime)} - {formatTime(period.endTime)}
+                                </span>
+                                <span>Period {period.periodNumber}</span>
+                                {period.venue && (
+                                  <span className="flex items-center">
+                                    <MapPin className="h-3 w-3 mr-1" />
+                                    {period.venue}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            {isCurrentPeriod(period) && (
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800">
+                                <div className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse"></div>
+                                Current
+                              </span>
+                            )}
+                            {isNextPeriod(period) && (
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                Next
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <div className="text-6xl mb-4">🎉</div>
+                  <h3 className="text-xl font-semibold text-gray-600 mb-2">No Classes Today</h3>
+                  <p className="text-gray-500">Enjoy your free day!</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {viewMode === 'statistics' && (
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-t-lg">
+                <CardTitle className="text-xl font-semibold">Teaching Load</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Weekly Periods</span>
+                    <span className="text-2xl font-bold text-purple-600">
+                      {scheduleData.statistics.totalPeriodsPerWeek}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Average Per Day</span>
+                    <span className="text-2xl font-bold text-blue-600">
+                      {scheduleData.statistics.averagePeriodsPerDay}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Active Days</span>
+                    <span className="text-2xl font-bold text-green-600">
+                      {scheduleData.statistics.busyDays}/6
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-indigo-500 to-blue-600 text-white rounded-t-lg">
+                <CardTitle className="text-xl font-semibold">Teaching Portfolio</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">Subjects</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {scheduleData.teacher.subjects.map((subject) => (
+                        <span
+                          key={subject}
+                          className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                        >
+                          {subject}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">Grade Levels</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {scheduleData.teacher.grades.map((grade) => (
+                        <span
+                          key={grade}
+                          className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium"
+                        >
+                          Grade {grade}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  {scheduleData.teacher.isClassTeacher && scheduleData.teacher.classTeacherFor && (
+                    <div>
+                      <h4 className="font-medium text-gray-700 mb-2">Class Teacher</h4>
+                      <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                        Grade {scheduleData.teacher.classTeacherFor.grade} - Section {scheduleData.teacher.classTeacherFor.section}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default TeacherScheduleView;
+
+  const getTodaysSchedule = () => {
+    if (!schedule) return null;
+    
+    const today = new Date().toDateString();
+    return schedule.days.find(day => new Date(day.date).toDateString() === today);
+  };
+
+  const getUpcomingPeriod = () => {
+    const todaySchedule = getTodaysSchedule();
+    if (!todaySchedule) return null;
+    
+    const now = new Date();
+    return todaySchedule.periods.find(period => {
+      const startTime = new Date(`${now.toDateString()} ${period.startTime}`);
+      return startTime > now;
+    });
+  };
+
+  const getCurrentPeriod = () => {
+    const todaySchedule = getTodaysSchedule();
+    if (!todaySchedule) return null;
+    
+    return todaySchedule.periods.find(period => isCurrentPeriod(period, new Date()));
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Clock className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600">Loading your schedule...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const currentPeriod = getCurrentPeriod();
+  const upcomingPeriod = getUpcomingPeriod();
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">My Schedule</h2>
+          <p className="text-gray-600">View your teaching schedule and periods</p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button onClick={goToPreviousWeek} variant="outline" size="sm">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button onClick={goToToday} variant="outline" size="sm">
+            Today
+          </Button>
+          <Button onClick={goToNextWeek} variant="outline" size="sm">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Current Status */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {currentPeriod ? (
+          <Card className="border-green-500">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-green-700">
+                <Play className="h-5 w-5 mr-2" />
+                Current Period
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-lg">{currentPeriod.subject}</span>
+                  <span className="text-sm text-gray-600">
+                    {formatTime(currentPeriod.startTime)} - {formatTime(currentPeriod.endTime)}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <div className="flex items-center">
+                    <Users className="h-4 w-4 mr-1" />
+                    Grade {currentPeriod.grade} - {currentPeriod.section}
+                  </div>
+                  <div className="flex items-center">
+                    <MapPin className="h-4 w-4 mr-1" />
+                    Room {currentPeriod.room}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-sm text-gray-600">
+                    {currentPeriod.studentsCount} students
+                  </span>
+                  {!currentPeriod.attendanceMarked && (
+                    <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full">
+                      Attendance Pending
+                    </span>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <Pause className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-600">No ongoing period</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {upcomingPeriod ? (
+          <Card className="border-blue-500">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-blue-700">
+                <Clock className="h-5 w-5 mr-2" />
+                Next Period
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-lg">{upcomingPeriod.subject}</span>
+                  <span className="text-sm text-gray-600">
+                    {formatTime(upcomingPeriod.startTime)} - {formatTime(upcomingPeriod.endTime)}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <div className="flex items-center">
+                    <Users className="h-4 w-4 mr-1" />
+                    Grade {upcomingPeriod.grade} - {upcomingPeriod.section}
+                  </div>
+                  <div className="flex items-center">
+                    <MapPin className="h-4 w-4 mr-1" />
+                    Room {upcomingPeriod.room}
+                  </div>
+                </div>
+                <div className="text-sm text-gray-600 pt-2">
+                  {upcomingPeriod.studentsCount} students
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <CheckCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-600">No more periods today</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Weekly Schedule */}
+      {schedule && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>
+                Weekly Schedule
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                {new Date(schedule.weekStartDate).toLocaleDateString()} - {new Date(schedule.weekEndDate).toLocaleDateString()}
+              </p>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {schedule.days.map((daySchedule) => (
+                <div key={daySchedule.day} className="space-y-3">
+                  <div className="flex items-center">
+                    <h3 className="text-lg font-semibold text-gray-900 mr-3">
+                      {daySchedule.day}
+                    </h3>
+                    <span className="text-sm text-gray-600">
+                      {new Date(daySchedule.date).toLocaleDateString()}
+                    </span>
+                    {new Date(daySchedule.date).toDateString() === new Date().toDateString() && (
+                      <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+                        Today
+                      </span>
+                    )}
+                  </div>
+
+                  {daySchedule.periods.length > 0 ? (
+                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                      {daySchedule.periods.map((period) => {
+                        const periodStatus = getPeriodStatus(period, new Date(daySchedule.date));
+                        
+                        return (
+                          <div
+                            key={period.id}
+                            className={`p-4 border rounded-lg ${periodStatus.color}`}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <h4 className="font-medium text-gray-900">{period.subject}</h4>
+                                <p className="text-sm text-gray-600">
+                                  Grade {period.grade} - {period.section}
+                                </p>
+                              </div>
+                              <div className="flex items-center text-xs">
+                                {periodStatus.icon}
+                                <span className="ml-1">{periodStatus.text}</span>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1 text-sm text-gray-600">
+                              <div className="flex items-center">
+                                <Clock className="h-3 w-3 mr-1" />
+                                {formatTime(period.startTime)} - {formatTime(period.endTime)}
+                              </div>
+                              <div className="flex items-center">
+                                <MapPin className="h-3 w-3 mr-1" />
+                                Room {period.room}
+                              </div>
+                              <div className="flex items-center">
+                                <Users className="h-3 w-3 mr-1" />
+                                {period.studentsCount} students
+                              </div>
+                            </div>
+
+                            {periodStatus.status === 'completed' && !period.attendanceMarked && (
+                              <div className="mt-2 flex items-center text-xs text-orange-600">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Attendance not marked
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-lg">
+                      <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                      <p>No periods scheduled for this day</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!schedule && !loading && (
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Schedule Available</h3>
+              <p className="text-gray-600">
+                Your teaching schedule will appear here once it's been set up.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+export default TeacherScheduleView;

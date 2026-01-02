@@ -1,0 +1,11 @@
+export { default as SchoolBasicInfo } from "./SchoolBasicInfo";
+export { default as SchoolContactInfo } from "./SchoolContactInfo";
+export { default as SchoolAdminInfo } from "./SchoolAdminInfo";
+export { default as SchoolAcademicSession } from "./SchoolAcademicSession";
+export { default as SchoolSettings } from "./SchoolSettings";
+export { default as SchoolApiConfig } from "./SchoolApiConfig";
+export { default as SchoolStatusManagement } from "./SchoolStatusManagement";
+export { default as SchoolMetadata } from "./SchoolMetadata";
+export { StatusBadge } from "./StatusBadge";
+export * from "./types";
+export * from "./utils";
