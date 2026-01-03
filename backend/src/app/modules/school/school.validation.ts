@@ -44,7 +44,7 @@ const settingsValidationSchema = z.object({
     .min(1, 'Maximum students per section must be at least 1')
     .optional(),
   grades: z
-    .array(z.number().min(1).max(12))
+    .array(z.number().min(1).max(13))
     .min(1, 'At least one grade must be specified')
     .optional(),
   sections: z
@@ -108,20 +108,12 @@ const updateSchoolValidationSchema = z.object({
       .max(100, 'School name cannot exceed 100 characters')
       .trim()
       .optional(),
-    address: z
-      .string()
-      .max(200, 'Address cannot exceed 200 characters')
-      .trim()
-      .optional(),
-    phone: z
-      .string()
-      .regex(/^\+?[\d\s\-\(\)]+$/, 'Invalid phone number format')
-      .optional(),
-    email: z
-      .string()
-      .email('Invalid email format')
-      .toLowerCase()
-      .optional(),
+    establishedYear: z.number().min(1800).max(new Date().getFullYear()).optional(),
+    address: addressValidationSchema.optional(),
+    contact: contactValidationSchema.optional(),
+    affiliation: z.string().max(100, 'Affiliation cannot exceed 100 characters').optional(),
+    recognition: z.string().max(200, 'Recognition cannot exceed 200 characters').optional(),
+    logo: z.string().url('Invalid logo URL').optional(),
     status: z
       .enum(['active', 'inactive', 'suspended'], {
         errorMap: () => ({ message: 'Status must be active, inactive, or suspended' }),
