@@ -113,9 +113,9 @@ const settingsSchema = new Schema<ISchoolSettings>({
     default: config.default_grades,
     validate: {
       validator: function (grades: number[]) {
-        return grades.every(grade => grade >= 1 && grade <= 12);
+        return grades.every(grade => grade >= 1 && grade <= 13);
       },
-      message: 'Grades must be between 1 and 12'
+      message: 'Grades must be between 1 and 13'
     }
   },
   sections: {
@@ -156,7 +156,7 @@ const settingsSchema = new Schema<ISchoolSettings>({
     type: String,
     default: config.default_timezone,
     validate: {
-      validator: function(v: string) {
+      validator: function (v: string) {
         if (!v) return true; // Allow empty/null (will use default)
         try {
           // Validate IANA timezone format using Intl API
@@ -252,7 +252,7 @@ const schoolSchema = new Schema<ISchoolDocument, ISchoolModel, ISchoolMethods>(
       ref: 'Organization',
       index: true
     },
-    
+
     // Basic Information
     name: {
       type: String,
@@ -279,7 +279,7 @@ const schoolSchema = new Schema<ISchoolDocument, ISchoolModel, ISchoolMethods>(
       min: [1800, 'Established year cannot be before 1800'],
       max: [new Date().getFullYear(), 'Established year cannot be in the future']
     },
-    
+
     // Contact Information
     address: {
       type: addressSchema,
@@ -289,7 +289,7 @@ const schoolSchema = new Schema<ISchoolDocument, ISchoolModel, ISchoolMethods>(
       type: contactSchema,
       required: [true, 'Contact information is required']
     },
-    
+
     // Administrative
     status: {
       type: String,
@@ -306,7 +306,7 @@ const schoolSchema = new Schema<ISchoolDocument, ISchoolModel, ISchoolMethods>(
       required: [true, 'Admin user ID is required'],
       index: true
     },
-    
+
     // Educational Details
     affiliation: {
       type: String,
@@ -318,13 +318,13 @@ const schoolSchema = new Schema<ISchoolDocument, ISchoolModel, ISchoolMethods>(
       trim: true,
       maxlength: [200, 'Recognition details cannot exceed 200 characters']
     },
-    
+
     // Settings
     settings: {
       type: settingsSchema,
       default: () => ({})
     },
-    
+
     // Academic Sessions - Optional for now
     currentSession: {
       type: academicSessionSchema,
@@ -334,7 +334,7 @@ const schoolSchema = new Schema<ISchoolDocument, ISchoolModel, ISchoolMethods>(
       type: [academicSessionSchema],
       default: []
     },
-    
+
     // API Configuration
     apiEndpoint: {
       type: String,
@@ -346,7 +346,7 @@ const schoolSchema = new Schema<ISchoolDocument, ISchoolModel, ISchoolMethods>(
       unique: true,
       index: true
     },
-    
+
     // Media
     logo: {
       type: String,
@@ -356,7 +356,7 @@ const schoolSchema = new Schema<ISchoolDocument, ISchoolModel, ISchoolMethods>(
       type: [String],
       default: []
     },
-    
+
     // Metadata
     isActive: {
       type: Boolean,
@@ -374,7 +374,7 @@ const schoolSchema = new Schema<ISchoolDocument, ISchoolModel, ISchoolMethods>(
       ref: 'User',
       index: true
     },
-    
+
     // Statistics
     stats: {
       type: statsSchema,
@@ -445,16 +445,16 @@ schoolSchema.methods.setActiveAcademicSession = async function (this: ISchoolDoc
   if (!session) {
     throw new Error('Academic session not found');
   }
-  
+
   // Deactivate current session if it exists
   if (this.currentSession) {
     this.currentSession.isActive = false;
   }
-  
+
   // Set new active session
   session.isActive = true;
   this.currentSession = { ...session };
-  
+
   return await this.save();
 };
 
@@ -486,11 +486,11 @@ schoolSchema.methods.createGoogleDriveFolder = async function (this: ISchoolDocu
 schoolSchema.methods.getSectionCapacity = function (this: ISchoolDocument, grade: number, section: string): { maxStudents: number; currentStudents: number } {
   const key = `${grade}-${section}`;
   const sectionCapacity = this.settings?.sectionCapacity;
-  
+
   if (sectionCapacity && sectionCapacity[key]) {
     return sectionCapacity[key];
   }
-  
+
   // Return default capacity if not found
   return {
     maxStudents: this.settings?.maxStudentsPerSection || 0,
@@ -500,35 +500,35 @@ schoolSchema.methods.getSectionCapacity = function (this: ISchoolDocument, grade
 
 schoolSchema.methods.setSectionCapacity = async function (this: ISchoolDocument, grade: number, section: string, maxStudents: number): Promise<ISchoolDocument> {
   const key = `${grade}-${section}`;
-  
+
   if (!this.settings?.sectionCapacity) {
     this.settings!.sectionCapacity = {};
   }
-  
+
   const currentData = this.getSectionCapacity(grade, section);
   this.settings!.sectionCapacity![key] = {
     maxStudents: Math.max(10, Math.min(60, maxStudents)), // Clamp between 10-60
     currentStudents: currentData.currentStudents
   };
-  
+
   return await this.save();
 };
 
 schoolSchema.methods.updateCurrentStudentCount = async function (this: ISchoolDocument, grade: number, section: string, increment: number = 1): Promise<ISchoolDocument> {
   const key = `${grade}-${section}`;
-  
+
   if (!this.settings?.sectionCapacity) {
     this.settings!.sectionCapacity = {};
   }
-  
+
   const currentData = this.getSectionCapacity(grade, section);
   const newCount = Math.max(0, currentData.currentStudents + increment);
-  
+
   this.settings!.sectionCapacity![key] = {
     maxStudents: currentData.maxStudents,
     currentStudents: newCount
   };
-  
+
   return await this.save();
 };
 
@@ -541,8 +541,8 @@ schoolSchema.methods.getAvailableSectionsForGrade = function (this: ISchoolDocum
   if (!this.getGradesOffered().includes(grade)) {
     return [];
   }
-  
-  return this.settings?.sections?.filter(section => 
+
+  return this.settings?.sections?.filter(section =>
     this.canEnrollInSection(grade, section)
   ) || [];
 };
@@ -551,11 +551,11 @@ schoolSchema.methods.initializeSectionCapacity = async function (this: ISchoolDo
   if (!this.settings?.sectionCapacity) {
     this.settings!.sectionCapacity = {};
   }
-  
+
   const grades = this.settings?.grades || [];
   const sections = this.settings?.sections || [];
   const defaultCapacity = this.settings?.maxStudentsPerSection || 0;
-  
+
   grades.forEach(grade => {
     sections.forEach(section => {
       const key = `${grade}-${section}`;
@@ -567,7 +567,7 @@ schoolSchema.methods.initializeSectionCapacity = async function (this: ISchoolDo
       }
     });
   });
-  
+
   return await this.save();
 };
 
@@ -610,7 +610,7 @@ schoolSchema.statics.generateUniqueSchoolId = async function (): Promise<string>
   let schoolId: string;
   let isUnique = false;
   let counter = 1;
-  
+
   while (!isUnique) {
     schoolId = `SCH${counter.toString().padStart(4, '0')}`;
     const existing = await this.findOne({ schoolId });
@@ -620,7 +620,7 @@ schoolSchema.statics.generateUniqueSchoolId = async function (): Promise<string>
       counter++;
     }
   }
-  
+
   return schoolId!;
 };
 
@@ -630,11 +630,11 @@ schoolSchema.statics.generateUniqueSlug = async function (name: string): Promise
     .replace(/[^a-z0-9\s]/g, '')
     .replace(/\s+/g, '-')
     .trim();
-  
+
   let slug = baseSlug;
   let counter = 1;
   let isUnique = false;
-  
+
   while (!isUnique) {
     const existing = await this.findOne({ slug });
     if (!existing) {
@@ -644,7 +644,7 @@ schoolSchema.statics.generateUniqueSlug = async function (name: string): Promise
       slug = `${baseSlug}-${counter}`;
     }
   }
-  
+
   return slug;
 };
 
@@ -681,19 +681,19 @@ schoolSchema.pre('save', async function (next) {
     if (!this.schoolId) {
       this.schoolId = await (this.constructor as ISchoolModel).generateUniqueSchoolId();
     }
-    
+
     if (!this.slug) {
       this.slug = await (this.constructor as ISchoolModel).generateUniqueSlug(this.name);
     }
-    
+
     if (!this.apiEndpoint) {
       this.apiEndpoint = this.generateApiEndpoint();
     }
-    
+
     if (!this.apiKey) {
       this.apiKey = this.generateApiKey();
     }
-    
+
     // Set current session as active only if provided
     if (this.currentSession) {
       this.currentSession.isActive = true;
@@ -703,7 +703,7 @@ schoolSchema.pre('save', async function (next) {
 
   // Hash password if it's being modified and not already hashed (legacy support)
   // Note: This is for backward compatibility only - new schools use User model
-  
+
   // Normalize school name (title case)
   if (this.isModified('name')) {
     this.name = this.name.trim().replace(/\w\S*/g, (txt: string) =>
@@ -726,11 +726,11 @@ schoolSchema.pre('save', async function (next) {
     if (!this.settings?.sectionCapacity) {
       this.settings!.sectionCapacity = {};
     }
-    
+
     const grades = this.settings?.grades || [];
     const sections = this.settings?.sections || [];
     const defaultCapacity = this.settings?.maxStudentsPerSection || 0;
-    
+
     grades.forEach(grade => {
       sections.forEach(section => {
         const key = `${grade}-${section}`;
