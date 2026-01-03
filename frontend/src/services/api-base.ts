@@ -1,14 +1,14 @@
 import axios from "axios";
 
 // Base API URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+// We use a relative path '/api' to allow Nginx (in prod) and Vite (in dev) to handle proxying.
 const API_TIMEOUT =
   Number((import.meta.env.VITE_API_TIMEOUT as string | undefined) ?? "") ||
   180000;
 
 // Create axios instance
 export const api = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
+  baseURL: "/api",
   timeout: API_TIMEOUT,
   withCredentials: true,
   headers: {
