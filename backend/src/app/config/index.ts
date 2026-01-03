@@ -65,9 +65,9 @@ export default {
   allowed_document_formats: ['pdf', 'doc', 'docx'],
 
   // School settings
-  default_grades: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  default_grades: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
   default_sections: ['A', 'B', 'C', 'D'],
-  max_students_per_section: 100, // Set to reasonable default, actual capacity managed per school
+  max_students_per_section: 200, // Set to reasonable default, actual capacity managed per school
 
   // Attendance settings
   attendance_grace_period_minutes: 15,

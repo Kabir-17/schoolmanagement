@@ -270,24 +270,24 @@ const SchoolForm: React.FC<SchoolFormProps> = ({
     } catch (error: any) {
       console.error('Failed to save school:', error);
       console.error('Error response data:', error.response?.data);
-      
+
       // Extract detailed validation errors
       let errorMessage = 'Failed to save school. Please check the following errors:';
       const validationErrors: Record<string, string> = {};
-      
+
       if (error.response?.data?.errorSources) {
         error.response.data.errorSources.forEach((err: any) => {
           const path = Array.isArray(err.path) ? err.path.join('.') : err.path;
           validationErrors[path] = err.message;
         });
-        
+
         // Create a readable error message
         const errorList = Object.entries(validationErrors).map(([path, msg]) => `${path}: ${msg}`).join('\n');
         errorMessage = `Validation errors:\n${errorList}`;
       } else {
         errorMessage = error.response?.data?.message || 'Failed to save school. Please try again.';
       }
-      
+
       setErrors({ submit: errorMessage });
     } finally {
       setLoading(false);
@@ -525,7 +525,7 @@ const SchoolForm: React.FC<SchoolFormProps> = ({
                   Grades Offered *
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((grade) => (
+                  {Array.from({ length: 13 }, (_, i) => i + 1).map((grade) => (
                     <label key={grade} className="flex items-center space-x-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -535,7 +535,7 @@ const SchoolForm: React.FC<SchoolFormProps> = ({
                           const newGrades = e.target.checked
                             ? [...currentGrades, grade].sort((a: number, b: number) => a - b)
                             : currentGrades.filter((g: number) => g !== grade);
-                          
+
                           setFormData(prev => ({
                             ...prev,
                             settings: {
@@ -569,7 +569,7 @@ const SchoolForm: React.FC<SchoolFormProps> = ({
                           const newSections = e.target.checked
                             ? [...currentSections, section].sort()
                             : currentSections.filter((s: string) => s !== section);
-                          
+
                           setFormData(prev => ({
                             ...prev,
                             settings: {
@@ -718,18 +718,18 @@ const SchoolForm: React.FC<SchoolFormProps> = ({
               </div>
             )}
             <div className="flex space-x-3 w-full sm:w-auto">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={onClose} 
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
                 disabled={loading}
                 className="flex-1 sm:flex-none"
               >
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
-                disabled={loading} 
+              <Button
+                type="submit"
+                disabled={loading}
                 className="flex items-center justify-center gap-2 flex-1 sm:flex-none"
               >
                 {loading ? (
