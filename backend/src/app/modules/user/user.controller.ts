@@ -100,7 +100,7 @@ const verify = catchAsync(async (req: AuthenticatedRequest, res: Response): Prom
 
   // Get user from service to ensure up-to-date data
   const user = await userService.getUserById(req.user.id);
-  
+
   res.status(httpStatus.OK).json({
     success: true,
     message: 'Token verified successfully',
@@ -127,8 +127,8 @@ const login = catchAsync(async (req: Request, res: Response) => {
   // Set httpOnly cookie for authentication
   res.cookie('token', result.accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: false, // process.env.NODE_ENV === 'production', // Disabled for HTTP VPS
+    sameSite: 'lax',
     expires: result.tokenExpires,
     path: '/',
   });
@@ -149,8 +149,8 @@ const logout = catchAsync(async (req: Request, res: Response) => {
   // Clear authentication cookie
   res.clearCookie('token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: false, // process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
     path: '/',
   });
 
