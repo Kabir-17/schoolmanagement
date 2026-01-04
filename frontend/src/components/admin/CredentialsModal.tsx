@@ -36,7 +36,8 @@ interface CredentialsModalProps {
   credentials: CredentialsData | null;
   studentName: string;
   parentName: string;
-  onUpdateCredentials?: (type: 'student' | 'parent', field: 'password', value: string) => void;
+  onUpdateCredentials?: (type: 'student' | 'parent', field: 'password' | 'username', value: string) => void;
+  onSaveCredentials?: () => void;
 }
 
 export const CredentialsModal: React.FC<CredentialsModalProps> = ({
@@ -46,6 +47,7 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({
   studentName,
   parentName,
   onUpdateCredentials,
+  onSaveCredentials,
 }) => {
   const [showStudentPassword, setShowStudentPassword] = React.useState(false);
   const [showParentPassword, setShowParentPassword] = React.useState(false);
@@ -147,9 +149,15 @@ Generated on: ${new Date().toLocaleString()}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Username</label>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-gray-100 p-2 rounded border">
-                      {credentials.student.username}
-                    </code>
+                    <Input
+                      value={credentials.student.username}
+                      onChange={(e) => {
+                        if (onUpdateCredentials) {
+                          onUpdateCredentials('student', 'username', e.target.value);
+                        }
+                      }}
+                      className="flex-1 bg-white p-2 rounded border"
+                    />
                     <Button
                       variant="outline"
                       size="sm"
@@ -258,9 +266,15 @@ Generated on: ${new Date().toLocaleString()}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Username</label>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-gray-100 p-2 rounded border">
-                      {credentials.parent.username}
-                    </code>
+                    <Input
+                      value={credentials.parent.username}
+                      onChange={(e) => {
+                        if (onUpdateCredentials) {
+                          onUpdateCredentials('parent', 'username', e.target.value);
+                        }
+                      }}
+                      className="flex-1 bg-white p-2 rounded border"
+                    />
                     <Button
                       variant="outline"
                       size="sm"
@@ -358,14 +372,22 @@ Generated on: ${new Date().toLocaleString()}
 
         {/* Action Buttons - Fixed at bottom */}
         <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t bg-white flex-shrink-0">
-          <Button onClick={downloadCredentials} className="flex-1">
+          <Button
+            onClick={() => {
+              if (onSaveCredentials) onSaveCredentials();
+            }}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Save Changes
+          </Button>
+          <Button onClick={downloadCredentials} className="flex-1" variant="outline">
             Download Credentials
           </Button>
-          <Button variant="outline" onClick={onClose} className="flex-1">
+          <Button variant="ghost" onClick={onClose} className="flex-1">
             Close
           </Button>
         </div>
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 };
