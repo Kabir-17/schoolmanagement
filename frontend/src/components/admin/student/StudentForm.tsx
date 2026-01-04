@@ -92,7 +92,7 @@ const StudentForm: React.FC<StudentFormProps> = ({
   const [formData, setFormData] = useState<Student>({
     grade: 9,
     section: "A",
-    dob: "",
+    dob: new Date(new Date().setFullYear(new Date().getFullYear() - 15)).toISOString().split("T")[0],
     bloodGroup: "A+",
     isActive: true,
     admissionDate: new Date().toISOString().split("T")[0],
@@ -213,7 +213,7 @@ const StudentForm: React.FC<StudentFormProps> = ({
       setFormData({
         grade: 9,
         section: "A",
-        dob: "",
+        dob: new Date(new Date().setFullYear(new Date().getFullYear() - 15)).toISOString().split("T")[0],
         bloodGroup: "A+",
         isActive: true,
         admissionDate: new Date().toISOString().split("T")[0],
