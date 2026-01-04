@@ -66,7 +66,13 @@ export const apiService = {
   // Admin routes
   admin: {
     getDashboard: adminApi.getDashboard,
-    createStudent: studentApi.create,
+    createStudent: (data: any) => {
+      // Check if data is FormData
+      if (data instanceof FormData) {
+        return studentApi.createWithPhotos(data);
+      }
+      return studentApi.create(data);
+    },
     getStudents: studentApi.getAll,
     updateStudent: studentApi.update,
     deleteStudent: studentApi.delete,

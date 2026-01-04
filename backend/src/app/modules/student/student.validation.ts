@@ -27,14 +27,13 @@ const createStudentValidationSchema = z.object({
       .regex(/^\+?[\d\s\-\(\)]+$/, "Invalid phone number format")
       .optional(),
     // Fix: Handle FormData string-to-number conversion for grade
-    // Fix: Handle FormData string-to-number conversion for grade
-    grade: z.coerce
-      .number({
+    grade: z
+      .string({
         required_error: "Grade is required",
       })
-      .int()
-      .min(1, "Grade must be between 1 and 12")
-      .max(12, "Grade must be between 1 and 12"),
+      .transform((val) => parseInt(val, 10))
+      .refine((val) => !isNaN(val), "Grade must be a valid number")
+      .refine((val) => val >= 1 && val <= 12, "Grade must be between 1 and 12"),
     section: z
       .string()
       .default("A")
@@ -58,8 +57,8 @@ const createStudentValidationSchema = z.object({
         const dob = new Date(date);
         const today = new Date();
         const age = today.getFullYear() - dob.getFullYear();
-        return age >= 2 && age <= 50;
-      }, "Student age must be between 2 and 50 years"),
+        return age >= 3 && age <= 25;
+      }, "Student age must be between 3 and 25 years"),
     admissionDate: z
       .string()
       .regex(
@@ -68,13 +67,13 @@ const createStudentValidationSchema = z.object({
       )
       .optional(),
     // Make auto-generated fields optional in validation
-    admissionYear: z.coerce.number().optional(),
+    admissionYear: z.number().optional(),
     studentId: z.string().optional(),
-    rollNumber: z.coerce
+    rollNumber: z
       .number()
       .int("Roll number must be an integer")
       .min(1, "Roll number must be at least 1")
-      .max(100, "Roll number cannot exceed 100")
+      .max(60, "Roll number cannot exceed 60")
       .optional(),
     address: z
       .object({
