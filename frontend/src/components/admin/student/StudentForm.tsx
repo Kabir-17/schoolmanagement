@@ -54,15 +54,15 @@ interface Student {
     relationship?: string;
   };
   photos?:
-    | Array<{
-        id: string;
-        photoPath: string;
-        photoNumber: number;
-        filename: string;
-        size: number;
-        createdAt: string;
-      }>
-    | File[]; // Support both response and upload
+  | Array<{
+    id: string;
+    photoPath: string;
+    photoNumber: number;
+    filename: string;
+    size: number;
+    createdAt: string;
+  }>
+  | File[]; // Support both response and upload
   photoCount?: number;
   createdAt?: string;
   updatedAt?: string;
@@ -149,13 +149,13 @@ const StudentForm: React.FC<StudentFormProps> = ({
   // Load school data to get grade configuration
   useEffect(() => {
     const loadSchoolData = async () => {
-      
+
       if (!user?.schoolId) {
         console.error('No schoolId found in user context');
         setLoadingSchool(false);
         return;
       }
-      
+
       setLoadingSchool(true);
       try {
         const response = await adminApi.getSchoolSettings();
@@ -375,7 +375,9 @@ const StudentForm: React.FC<StudentFormProps> = ({
         formDataToSend.append("section", formData.section?.trim() || "A");
         formDataToSend.append("bloodGroup", formData.bloodGroup);
         formDataToSend.append("dob", formData.dob);
-        formDataToSend.append("admissionDate", formData.admissionDate || "");
+        if (formData.admissionDate) {
+          formDataToSend.append("admissionDate", formData.admissionDate);
+        }
 
         // Add parent info
         formDataToSend.append("parentInfo[name]", formData.parent.name!.trim());
@@ -453,6 +455,9 @@ const StudentForm: React.FC<StudentFormProps> = ({
       }
     } catch (error: any) {
       console.error("Failed to save student:", error);
+      if (error.response?.data) {
+        console.error("API Error Details:", error.response.data);
+      }
       showApiError(
         error,
         `Failed to ${student?.id ? "update" : "create"} student`
@@ -672,9 +677,8 @@ const StudentForm: React.FC<StudentFormProps> = ({
                     }
                   >
                     <SelectTrigger
-                      className={`w-full ${
-                        errors.grade ? "border-red-500" : ""
-                      }`}
+                      className={`w-full ${errors.grade ? "border-red-500" : ""
+                        }`}
                     >
                       <SelectValue placeholder="Select Grade" />
                     </SelectTrigger>
@@ -718,9 +722,8 @@ const StudentForm: React.FC<StudentFormProps> = ({
                     }
                   >
                     <SelectTrigger
-                      className={`w-full ${
-                        errors.section ? "border-red-500" : ""
-                      }`}
+                      className={`w-full ${errors.section ? "border-red-500" : ""
+                        }`}
                     >
                       <SelectValue placeholder="Select Section" />
                     </SelectTrigger>
