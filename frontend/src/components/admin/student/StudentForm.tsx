@@ -68,6 +68,14 @@ interface Student {
   updatedAt?: string;
 
   // Form-specific fields for compatibility
+  studentCredentials?: {
+    username?: string;
+    password?: string;
+  };
+  parentCredentials?: {
+    username?: string;
+    password?: string;
+  };
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -121,6 +129,14 @@ const StudentForm: React.FC<StudentFormProps> = ({
       postalCode: "",
     },
     photos: [],
+    studentCredentials: {
+      username: "",
+      password: "",
+    },
+    parentCredentials: {
+      username: "",
+      password: "",
+    },
   });
 
   const [loading, setLoading] = useState(false);
@@ -428,6 +444,20 @@ const StudentForm: React.FC<StudentFormProps> = ({
         }
         if (formData.address?.postalCode?.trim()) {
           formDataToSend.append("address[postalCode]", formData.address.postalCode.trim());
+        }
+
+        // Add manual credentials if provided
+        if (formData.studentCredentials?.username?.trim()) {
+          formDataToSend.append("studentCredentials[username]", formData.studentCredentials.username.trim());
+        }
+        if (formData.studentCredentials?.password?.trim()) {
+          formDataToSend.append("studentCredentials[password]", formData.studentCredentials.password.trim());
+        }
+        if (formData.parentCredentials?.username?.trim()) {
+          formDataToSend.append("parentCredentials[username]", formData.parentCredentials.username.trim());
+        }
+        if (formData.parentCredentials?.password?.trim()) {
+          formDataToSend.append("parentCredentials[password]", formData.parentCredentials.password.trim());
         }
 
         // Add photos
@@ -916,6 +946,46 @@ const StudentForm: React.FC<StudentFormProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* Student Credentials Section */}
+              <div className="pt-4 border-t">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Student Account Credentials (Optional)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Username
+                    </label>
+                    <Input
+                      value={formData.studentCredentials?.username || ""}
+                      onChange={(e) =>
+                        setFormData(prev => ({
+                          ...prev,
+                          studentCredentials: { ...prev.studentCredentials, username: e.target.value }
+                        }))
+                      }
+                      placeholder="Enter custom username"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Leave blank to auto-generate</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Password
+                    </label>
+                    <Input
+                      type="password"
+                      value={formData.studentCredentials?.password || ""}
+                      onChange={(e) =>
+                        setFormData(prev => ({
+                          ...prev,
+                          studentCredentials: { ...prev.studentCredentials, password: e.target.value }
+                        }))
+                      }
+                      placeholder="Enter custom password"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Leave blank to auto-generate</p>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
@@ -1033,6 +1103,46 @@ const StudentForm: React.FC<StudentFormProps> = ({
                     <option value="Grandmother">Grandmother</option>
                     <option value="Other">Other</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Parent Credentials Section */}
+              <div className="pt-4 border-t">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Parent Account Credentials (Optional)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Username
+                    </label>
+                    <Input
+                      value={formData.parentCredentials?.username || ""}
+                      onChange={(e) =>
+                        setFormData(prev => ({
+                          ...prev,
+                          parentCredentials: { ...prev.parentCredentials, username: e.target.value }
+                        }))
+                      }
+                      placeholder="Enter custom username"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Leave blank to auto-generate</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Password
+                    </label>
+                    <Input
+                      type="password"
+                      value={formData.parentCredentials?.password || ""}
+                      onChange={(e) =>
+                        setFormData(prev => ({
+                          ...prev,
+                          parentCredentials: { ...prev.parentCredentials, password: e.target.value }
+                        }))
+                      }
+                      placeholder="Enter custom password"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Leave blank to auto-generate</p>
+                  </div>
                 </div>
               </div>
             </CardContent>

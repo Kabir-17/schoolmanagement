@@ -188,9 +188,9 @@ class StudentService {
               {
                 schoolId: studentData.schoolId,
                 role: "student",
-                username: credentials.student.username,
-                passwordHash: credentials.student.hashedPassword,
-                displayPassword: credentials.student.password,
+                username: studentData.studentCredentials?.username || credentials.student.username,
+                passwordHash: studentData.studentCredentials?.password || credentials.student.hashedPassword,
+                displayPassword: studentData.studentCredentials?.password || credentials.student.password,
                 firstName: studentData.firstName,
                 lastName: studentData.lastName,
                 email: studentData.email,
@@ -314,9 +314,9 @@ class StudentService {
               {
                 schoolId: studentData.schoolId,
                 role: "parent",
-                username: credentials.parent.username,
-                passwordHash: credentials.parent.hashedPassword,
-                displayPassword: credentials.parent.password,
+                username: studentData.parentCredentials?.username || credentials.parent.username,
+                passwordHash: studentData.parentCredentials?.password || credentials.parent.hashedPassword,
+                displayPassword: studentData.parentCredentials?.password || credentials.parent.password,
                 firstName: parentInfo.name.split(" ")[0] || parentInfo.name,
                 lastName:
                   parentInfo.name.split(" ").slice(1).join(" ") || "Guardian", // Default lastName if not provided

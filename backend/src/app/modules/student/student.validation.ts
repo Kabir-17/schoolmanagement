@@ -130,6 +130,18 @@ const createStudentValidationSchema = z.object({
         .trim()
         .optional(),
     }),
+    studentCredentials: z
+      .object({
+        username: z.string().min(3).max(50).trim().optional(),
+        password: z.string().min(6).max(50).optional(),
+      })
+      .optional(),
+    parentCredentials: z
+      .object({
+        username: z.string().min(3).max(50).trim().optional(),
+        password: z.string().min(6).max(50).optional(),
+      })
+      .optional(),
   }),
 });
 

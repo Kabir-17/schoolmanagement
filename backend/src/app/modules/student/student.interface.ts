@@ -92,7 +92,15 @@ export interface ICreateStudentRequest {
     phone?: string;
     address?: string;
     occupation?: string;
-    relationship?: string; 
+    relationship?: string;
+  };
+  studentCredentials?: {
+    username?: string;
+    password?: string;
+  };
+  parentCredentials?: {
+    username?: string;
+    password?: string;
   };
   photos?: Express.Multer.File[];
   rollNumber?: number;
