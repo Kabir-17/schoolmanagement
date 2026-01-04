@@ -28,12 +28,15 @@ interface CredentialsData {
   };
 }
 
+import { Input } from "../ui/Input";
+
 interface CredentialsModalProps {
   isOpen: boolean;
   onClose: () => void;
   credentials: CredentialsData | null;
   studentName: string;
   parentName: string;
+  onUpdateCredentials?: (type: 'student' | 'parent', field: 'password', value: string) => void;
 }
 
 export const CredentialsModal: React.FC<CredentialsModalProps> = ({
@@ -42,6 +45,7 @@ export const CredentialsModal: React.FC<CredentialsModalProps> = ({
   credentials,
   studentName,
   parentName,
+  onUpdateCredentials,
 }) => {
   const [showStudentPassword, setShowStudentPassword] = React.useState(false);
   const [showParentPassword, setShowParentPassword] = React.useState(false);
@@ -164,11 +168,18 @@ Generated on: ${new Date().toLocaleString()}
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-sm font-medium">Password</label>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-gray-100 p-2 rounded border">
-                      {showStudentPassword
-                        ? credentials.student.password
-                        : "••••••••••••"}
-                    </code>
+                    <Input
+                      type={showStudentPassword ? "text" : "password"}
+                      value={credentials.student.password}
+                      readOnly={false}  // Make input editable
+                      onChange={(e) => {
+                        // Logic to update password in state
+                        if (onUpdateCredentials) {
+                          onUpdateCredentials('student', 'password', e.target.value);
+                        }
+                      }}
+                      className="flex-1 bg-white p-2 rounded border"
+                    />
                     <Button
                       variant="outline"
                       size="sm"
@@ -265,11 +276,17 @@ Generated on: ${new Date().toLocaleString()}
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-sm font-medium">Password</label>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-gray-100 p-2 rounded border">
-                      {showParentPassword
-                        ? credentials.parent.password
-                        : "••••••••••••"}
-                    </code>
+                    <Input
+                      type={showParentPassword ? "text" : "password"}
+                      value={credentials.parent.password}
+                      readOnly={false}
+                      onChange={(e) => {
+                        if (onUpdateCredentials) {
+                          onUpdateCredentials('parent', 'password', e.target.value);
+                        }
+                      }}
+                      className="flex-1 bg-white p-2 rounded border"
+                    />
                     <Button
                       variant="outline"
                       size="sm"

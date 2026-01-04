@@ -579,6 +579,24 @@ const StudentForm: React.FC<StudentFormProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <CredentialsModal
+          isOpen={!!credentials}
+          onClose={() => setCredentials(null)}
+          credentials={credentials}
+          studentName={`${formData.firstName} ${formData.lastName}`}
+          parentName={formData.parent?.name || "Parent"}
+          onUpdateCredentials={(type, field, value) => {
+            if (credentials) {
+              setCredentials({
+                ...credentials,
+                [type]: {
+                  ...credentials[type],
+                  [field]: value
+                }
+              });
+            }
+          }}
+        />
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-xl font-semibold text-gray-900">
             {student ? "Edit Student" : "Add New Student"}
@@ -1102,17 +1120,17 @@ const StudentForm: React.FC<StudentFormProps> = ({
             </Button>
           </div>
         </form>
-      </div>
+      </div >
 
       {/* Credentials Modal */}
-      <CredentialsModal
+      < CredentialsModal
         isOpen={!!credentials}
         onClose={() => setCredentials(null)}
         credentials={credentials}
         studentName={`${formData.firstName} ${formData.lastName}`}
         parentName={formData.parent?.name || ""}
       />
-    </div>
+    </div >
   );
 };
 
