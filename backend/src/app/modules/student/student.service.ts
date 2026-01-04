@@ -83,34 +83,21 @@ class StudentService {
     let parentWasExisting = false;
     let credentials:
       | {
-          student: any;
-          parent: any;
-        }
+        student: any;
+        parent: any;
+      }
       | undefined = undefined;
 
     // Photos are mandatory for registration – validate before any DB work
-    if (!photos || photos.length === 0) {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        "Photos are required for student registration. Please upload at least 3 photos."
-      );
-    }
-
-    if (photos.length < 3) {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        "Minimum 3 photos required for student registration"
-      );
-    }
-
-    if (photos.length > 8) {
+    // Photos are optional
+    if (photos && photos.length > 8) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
         "Maximum 8 photos allowed per student"
       );
     }
 
-    for (const photo of photos) {
+    for (const photo of photos || []) {
       if (!photo.mimetype || !photo.originalname) {
         throw new AppError(
           httpStatus.BAD_REQUEST,
@@ -337,8 +324,8 @@ class StudentService {
                 email: parentInfo.email, // Make sure to save the email
               },
             ],
-              { session }
-            );
+            { session }
+          );
 
           // Generate parent ID for the Parent model - with retry logic for duplicates
           let parentId: string = "";
@@ -571,17 +558,21 @@ class StudentService {
         studentId!
       );
 
-      const cloudinaryResults = await uploadPhotosToCloudinary(
-        photos,
-        cloudinaryFolderPath,
-        studentId!
-      );
+      let cloudinaryResults: any[] = [];
+
+      if (photos && photos.length > 0) {
+        cloudinaryResults = await uploadPhotosToCloudinary(
+          photos,
+          cloudinaryFolderPath,
+          studentId!
+        );
+      }
 
       uploadedPublicIds.push(
-        ...cloudinaryResults.map((result) => result.public_id)
+        ...cloudinaryResults.map((result: any) => result.public_id)
       );
 
-      const photoDocuments = cloudinaryResults.map((result) => ({
+      const photoDocuments = cloudinaryResults.map((result: any) => ({
         studentId: studentDoc._id,
         schoolId: studentData.schoolId,
         photoNumber: result.photoNumber,
@@ -1253,8 +1244,7 @@ class StudentService {
     } catch (error) {
       throw new AppError(
         httpStatus.INTERNAL_SERVER_ERROR,
-        `Failed to fetch students by grade and section: ${
-          (error as Error).message
+        `Failed to fetch students by grade and section: ${(error as Error).message
         }`
       );
     }
@@ -1512,57 +1502,53 @@ class StudentService {
       updatedAt: student.updatedAt,
       user: userData
         ? {
-            id: extractId(userData),
-            username: userData.username || "",
-            firstName: userData.firstName || "",
-            lastName: userData.lastName || "",
-            fullName:
-              `${userData.firstName || ""} ${userData.lastName || ""}`.trim() ||
-              "Unknown User",
-            email: userData.email,
-            phone: userData.phone,
-          }
+          id: extractId(userData),
+          username: userData.username || "",
+          firstName: userData.firstName || "",
+          lastName: userData.lastName || "",
+          fullName:
+            `${userData.firstName || ""} ${userData.lastName || ""}`.trim() ||
+            "Unknown User",
+          email: userData.email,
+          phone: userData.phone,
+        }
         : undefined,
       school: student.schoolId
         ? {
-            id: extractId(student.schoolId),
-            name: student.schoolId.name || "Unknown School",
-            schoolId: student.schoolId.schoolId,
-            establishedYear: student.schoolId.establishedYear,
-            address: student.schoolId.address,
-            contact: student.schoolId.contact,
-            affiliation: student.schoolId.affiliation,
-            logo: student.schoolId.logo,
-          }
+          id: extractId(student.schoolId),
+          name: student.schoolId.name || "Unknown School",
+          schoolId: student.schoolId.schoolId,
+          establishedYear: student.schoolId.establishedYear,
+          address: student.schoolId.address,
+          contact: student.schoolId.contact,
+          affiliation: student.schoolId.affiliation,
+          logo: student.schoolId.logo,
+        }
         : undefined,
       parent: student.parentId
         ? {
-            id: extractId(student.parentId),
-            userId: student.parentId.userId
-              ? extractId(student.parentId.userId)
-              : undefined,
-            fullName: (student.parentId as any).userId
-              ? `${(student.parentId as any).userId.firstName || ""} ${
-                  (student.parentId as any).userId.lastName || ""
-                }`.trim()
-              : "Unknown Parent",
-            name: (student.parentId as any).userId
-              ? `${(student.parentId as any).userId.firstName || ""} ${
-                  (student.parentId as any).userId.lastName || ""
-                }`.trim()
-              : "Unknown Parent",
-            email: (student.parentId as any).userId?.email || undefined,
-            phone: (student.parentId as any).userId?.phone || undefined,
-            address: student.parentId.address
-              ? `${student.parentId.address.street || ""} ${
-                  student.parentId.address.city || ""
-                } ${student.parentId.address.state || ""} ${
-                  student.parentId.address.country || ""
-                }`.trim()
-              : undefined,
-            occupation: student.parentId.occupation || undefined,
-            relationship: student.parentId.relationship || undefined,
-          }
+          id: extractId(student.parentId),
+          userId: student.parentId.userId
+            ? extractId(student.parentId.userId)
+            : undefined,
+          fullName: (student.parentId as any).userId
+            ? `${(student.parentId as any).userId.firstName || ""} ${(student.parentId as any).userId.lastName || ""
+              }`.trim()
+            : "Unknown Parent",
+          name: (student.parentId as any).userId
+            ? `${(student.parentId as any).userId.firstName || ""} ${(student.parentId as any).userId.lastName || ""
+              }`.trim()
+            : "Unknown Parent",
+          email: (student.parentId as any).userId?.email || undefined,
+          phone: (student.parentId as any).userId?.phone || undefined,
+          address: student.parentId.address
+            ? `${student.parentId.address.street || ""} ${student.parentId.address.city || ""
+              } ${student.parentId.address.state || ""} ${student.parentId.address.country || ""
+              }`.trim()
+            : undefined,
+          occupation: student.parentId.occupation || undefined,
+          relationship: student.parentId.relationship || undefined,
+        }
         : undefined,
       photos:
         student.photos?.map((photo: any) => ({
@@ -2223,8 +2209,7 @@ class StudentService {
       if (error instanceof AppError) throw error;
       throw new AppError(
         httpStatus.INTERNAL_SERVER_ERROR,
-        `Failed to get student disciplinary actions: ${
-          (error as Error).message
+        `Failed to get student disciplinary actions: ${(error as Error).message
         }`
       );
     }
