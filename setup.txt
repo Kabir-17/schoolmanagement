@@ -1,0 +1,112 @@
+==============================================================================
+SCHOOL MANAGEMENT SYSTEM - DEPLOYMENT DOCUMENTATION
+==============================================================================
+
+VPS Details:
+------------
+Host: 51.178.86.97
+User: ubuntu
+Project Path: /var/www/sms
+
+Architecture:
+-------------
+1. Frontend: 
+   - React + Vite
+   - Served by PM2 on port 3000
+   - Accessible via Nginx at http://51.178.86.97
+   
+2. Backend:
+   - Node.js + Express
+   - Running on port 5000
+   - Managed by PM2
+   - Accessible via Nginx at http://51.178.86.97/api
+
+3. Database:
+   - MongoDB Atlas (Cloud)
+
+4. Web Server (Reverse Proxy):
+   - Nginx handles incoming traffic on port 80.
+   - Forwards "/" to Frontend (port 3000).
+   - Forwards "/api" to Backend (port 5000).
+
+==============================================================================
+MANAGEMENT COMMANDS
+==============================================================================
+
+First, SSH into your server:
+ssh ubuntu@51.178.86.97
+(Password: LABOREX@LBX12345)
+
+1. Check Status
+---------------
+Check if apps are running:
+  pm2 status
+
+2. View Logs
+------------
+See live logs for all apps:
+  pm2 logs
+
+See logs for specific app:
+  pm2 logs sms-backend
+  pm2 logs sms-frontend
+
+3. Restarting Applications
+--------------------------
+Restart everything:
+  pm2 restart all
+
+Restart just the backend (e.g., after configuration change):
+  pm2 restart sms-backend
+
+Restart just the frontend:
+  pm2 restart sms-frontend
+
+4. Stopping Applications
+------------------------
+Stop all apps:
+  pm2 stop all
+
+5. Persistence
+--------------
+If you restart the VPS, PM2 is configured to automatically restart your apps.
+To start manually if needed:
+  pm2 resurrect
+
+==============================================================================
+HOW TO UPDATE THE APPLICATION
+==============================================================================
+
+If you push changes to GitHub and want to update the live site:
+
+1. Navigate to project folder:
+   cd /var/www/sms
+
+2. Pull latest code:
+   git pull origin main
+
+3. If you updated the Backend:
+   cd backend
+   npm install      # If package.json changed
+   npm run build    # Recompile TypeScript
+   pm2 restart sms-backend
+
+4. If you updated the Frontend:
+   cd frontend
+   npm install      # If package.json changed
+   npm run build    # Rebuild static files
+   pm2 restart sms-frontend
+
+==============================================================================
+TROUBLESHOOTING
+==============================================================================
+
+- Site not reachable? Check Nginx:
+  sudo systemctl status nginx
+
+- 502 Bad Gateway?
+  Usually means the backend or frontend PM2 process is down. 
+  Check `pm2 status` and `pm2 logs`.
+
+- Database connection error?
+  Check `/var/www/sms/backend/.env` to ensure MONGODB_URI is correct.

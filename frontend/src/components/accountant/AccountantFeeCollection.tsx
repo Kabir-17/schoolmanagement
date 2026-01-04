@@ -165,12 +165,12 @@ const AccountantFeeCollection: React.FC = () => {
 
     try {
       setLoadingFeeStatus(true);
-      
+
       // Get basic fee status
       const response = await apiService.accountant.getStudentFeeStatus(
         student._id
       );
-      
+
       if (response.success) {
         setFeeStatus(response.data);
 
@@ -184,10 +184,10 @@ const AccountantFeeCollection: React.FC = () => {
       const detailedResponse = await apiService.fee.getStudentFeeStatusDetailed(
         student.studentId
       );
-      
+
       if (detailedResponse.success) {
         setDetailedFeeStatus(detailedResponse.data);
-        
+
       }
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load fee status");
@@ -285,7 +285,7 @@ const AccountantFeeCollection: React.FC = () => {
           const detailedResponse = await apiService.fee.getStudentFeeStatusDetailed(
             selectedStudent.studentId
           );
-          
+
           if (detailedResponse.success) {
             setDetailedFeeStatus(detailedResponse.data);
           }
@@ -430,24 +430,22 @@ const AccountantFeeCollection: React.FC = () => {
                       <div
                         key={student._id}
                         onClick={() => handleSelectStudent(student)}
-                        className={`border rounded-lg p-4 cursor-pointer transition-all duration-200 ${
-                          selectedStudent?._id === student._id
+                        className={`border rounded-lg p-4 cursor-pointer transition-all duration-200 ${selectedStudent?._id === student._id
                             ? "bg-orange-50 border-orange-500 shadow-md"
                             : "border-gray-200 hover:bg-gray-50 hover:border-gray-300"
-                        }`}
+                          }`}
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-1">
                               <p className="font-semibold text-gray-900">{student.name}</p>
                               {student.feeStatus && (
-                                <span className={`text-xs px-2 py-1 rounded-md ${
-                                  student.feeStatus.status === "paid"
+                                <span className={`text-xs px-2 py-1 rounded-md ${student.feeStatus.status === "paid"
                                     ? "bg-green-100 text-green-700"
                                     : student.feeStatus.status === "overdue"
-                                    ? "bg-red-100 text-red-700"
-                                    : "bg-yellow-100 text-yellow-700"
-                                }`}>
+                                      ? "bg-red-100 text-red-700"
+                                      : "bg-yellow-100 text-yellow-700"
+                                  }`}>
                                   {student.feeStatus.status}
                                 </span>
                               )}
@@ -533,11 +531,11 @@ const AccountantFeeCollection: React.FC = () => {
 
                   {/* PROMINENT DUE AMOUNT DISPLAY */}
                   {feeStatus && detailedFeeStatus && (() => {
-                    const calculatedTotalDue = 
-                      (detailedFeeStatus.monthlyDues || 0) + 
-                      (detailedFeeStatus.oneTimeDues || 0) + 
-                      (detailedFeeStatus.admissionPending 
-                        ? (detailedFeeStatus.admissionFeeAmount - (detailedFeeStatus.admissionFeePaid || 0)) 
+                    const calculatedTotalDue =
+                      (detailedFeeStatus.monthlyDues || 0) +
+                      (detailedFeeStatus.oneTimeDues || 0) +
+                      (detailedFeeStatus.admissionPending
+                        ? (detailedFeeStatus.admissionFeeAmount - (detailedFeeStatus.admissionFeePaid || 0))
                         : 0);
                     return calculatedTotalDue > 0 ? (
                       <div className="bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-lg p-4">
@@ -567,11 +565,11 @@ const AccountantFeeCollection: React.FC = () => {
                   )}
 
                   {feeStatus && detailedFeeStatus && (() => {
-                    const calculatedTotalDue = 
-                      (detailedFeeStatus.monthlyDues || 0) + 
-                      (detailedFeeStatus.oneTimeDues || 0) + 
-                      (detailedFeeStatus.admissionPending 
-                        ? (detailedFeeStatus.admissionFeeAmount - (detailedFeeStatus.admissionFeePaid || 0)) 
+                    const calculatedTotalDue =
+                      (detailedFeeStatus.monthlyDues || 0) +
+                      (detailedFeeStatus.oneTimeDues || 0) +
+                      (detailedFeeStatus.admissionPending
+                        ? (detailedFeeStatus.admissionFeeAmount - (detailedFeeStatus.admissionFeePaid || 0))
                         : 0);
                     return (
                       <div className="space-y-2">
@@ -613,7 +611,7 @@ const AccountantFeeCollection: React.FC = () => {
                       <Alert className="bg-orange-50 border-orange-200 mb-4">
                         <AlertCircle className="h-4 w-4 text-orange-600" />
                         <AlertDescription className="text-orange-800">
-                          <strong>First Payment Notice:</strong><br/>
+                          <strong>First Payment Notice:</strong><br />
                           This is the first payment. One-time fees will be automatically collected.
                           <div className="mt-3 space-y-1 text-sm">
                             <div className="flex justify-between">
@@ -640,76 +638,76 @@ const AccountantFeeCollection: React.FC = () => {
                     )}
 
                     <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
-                          <select
-                            value={selectedMonth}
-                            onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            {months.map((month, idx) => (
-                              <option key={idx + 1} value={idx + 1}>{month}</option>
-                            ))}
-                          </select>
-                        </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                        <select
+                          value={selectedMonth}
+                          onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {months.map((month, idx) => (
+                            <option key={idx + 1} value={idx + 1}>{month}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
-                          <input
-                            type="number"
-                            value={amount}
-                            onChange={(e) => setAmount(Number(e.target.value))}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Enter amount"
-                          />
-                          {validationData?.lateFeeAmount > 0 && (
-                            <p className="text-xs text-red-600 mt-1">
-                              Late fee applicable: ₹{formatCurrency(validationData.lateFeeAmount)}
-                            </p>
-                          )}
-                        </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
+                        <input
+                          type="number"
+                          value={amount}
+                          onChange={(e) => setAmount(Number(e.target.value))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter amount"
+                        />
+                        {validationData?.lateFeeAmount > 0 && (
+                          <p className="text-xs text-red-600 mt-1">
+                            Late fee applicable: ₹{formatCurrency(validationData.lateFeeAmount)}
+                          </p>
+                        )}
+                      </div>
 
-                        <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                          <input
-                            type="checkbox"
-                            id="includeLateFee"
-                            checked={includeLateFee}
-                            onChange={(e) => {
-                              setIncludeLateFee(e.target.checked);
-                              // Reset validation when checkbox changes
-                              setValidationData(null);
-                              setWarnings([]);
-                            }}
-                            className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
-                          />
-                          <label htmlFor="includeLateFee" className="text-sm font-medium text-gray-700 cursor-pointer">
-                            Include Late Fee {validationData?.lateFeeAmount > 0 && `(₹${formatCurrency(validationData.lateFeeAmount)})`}
-                          </label>
-                        </div>
+                      <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <input
+                          type="checkbox"
+                          id="includeLateFee"
+                          checked={includeLateFee}
+                          onChange={(e) => {
+                            setIncludeLateFee(e.target.checked);
+                            // Reset validation when checkbox changes
+                            setValidationData(null);
+                            setWarnings([]);
+                          }}
+                          className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                        />
+                        <label htmlFor="includeLateFee" className="text-sm font-medium text-gray-700 cursor-pointer">
+                          Include Late Fee {validationData?.lateFeeAmount > 0 && `(₹${formatCurrency(validationData.lateFeeAmount)})`}
+                        </label>
+                      </div>
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                          <select
-                            value={paymentMethod}
-                            onChange={(e) => setPaymentMethod(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            {paymentMethods.map((method) => (
-                              <option key={method.value} value={method.value}>{method.label}</option>
-                            ))}
-                          </select>
-                        </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                        <select
+                          value={paymentMethod}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {paymentMethods.map((method) => (
+                            <option key={method.value} value={method.value}>{method.label}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Remarks (Optional)</label>
-                          <textarea
-                            value={remarks}
-                            onChange={(e) => setRemarks(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            rows={3}
-                            placeholder="Add any remarks..."
-                          />
-                        </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Remarks (Optional)</label>
+                        <textarea
+                          value={remarks}
+                          onChange={(e) => setRemarks(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          rows={3}
+                          placeholder="Add any remarks..."
+                        />
+                      </div>
 
                       <div className="space-y-2 pt-2">
                         <Button
@@ -746,8 +744,8 @@ const AccountantFeeCollection: React.FC = () => {
                   <CardTitle className="text-2xl">Payment Receipt</CardTitle>
                   <CardDescription>Transaction ID: {lastTransaction.transactionId}</CardDescription>
                 </div>
-                <button 
-                  onClick={() => setShowReceipt(false)} 
+                <button
+                  onClick={() => setShowReceipt(false)}
                   className="text-gray-400 hover:text-gray-600 print:hidden"
                 >
                   <X className="w-6 h-6" />
@@ -757,7 +755,7 @@ const AccountantFeeCollection: React.FC = () => {
             <CardContent className="space-y-6 pt-6">
               {/* School Header */}
               <div className="text-center border-b pb-4">
-                <h2 className="text-xl font-bold">School Management System</h2>
+                <h2 className="text-xl font-bold">EDUNETGN</h2>
                 <p className="text-sm text-gray-600">Fee Payment Receipt</p>
                 <p className="text-xs text-gray-500 mt-1">
                   Date: {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}
@@ -794,7 +792,7 @@ const AccountantFeeCollection: React.FC = () => {
                     <span className="text-gray-600">Month:</span>
                     <span className="font-medium">{months[lastTransaction.month - 1]}</span>
                   </div>
-                  
+
                   {lastTransaction.isFirstPayment && lastTransaction.oneTimeFeeTransactions?.length > 0 && (
                     <>
                       <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 my-3">
@@ -821,7 +819,7 @@ const AccountantFeeCollection: React.FC = () => {
                     <span className="text-gray-600">Payment Method:</span>
                     <span className="font-medium capitalize">{lastTransaction.paymentMethod.replace('_', ' ')}</span>
                   </div>
-                  
+
                   {lastTransaction.remarks && (
                     <div className="flex justify-between py-2 border-b">
                       <span className="text-gray-600">Remarks:</span>
@@ -855,14 +853,14 @@ const AccountantFeeCollection: React.FC = () => {
 
               {/* Action Buttons */}
               <div className="flex gap-3 print:hidden">
-                <Button 
-                  onClick={handlePrintReceipt} 
+                <Button
+                  onClick={handlePrintReceipt}
                   className="flex-1 bg-blue-600 hover:bg-blue-700"
                 >
                   Print Receipt
                 </Button>
-                <Button 
-                  onClick={() => setShowReceipt(false)} 
+                <Button
+                  onClick={() => setShowReceipt(false)}
                   variant="outline"
                   className="flex-1"
                 >

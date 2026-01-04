@@ -46,7 +46,7 @@ const LoginPage: React.FC = () => {
     return (
       <PasswordChangeModal
         isOpen={true}
-        onClose={() => {}} // Cannot close until password is changed
+        onClose={() => { }} // Cannot close until password is changed
       />
     );
   }
@@ -80,7 +80,7 @@ const LoginPage: React.FC = () => {
             <GraduationCap className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            School Management
+            EDUNETGN
           </h1>
           <p className="text-gray-600">
             Sign in to access your dashboard
@@ -172,7 +172,7 @@ const LoginPage: React.FC = () => {
               </svg>
               <h3 className="font-semibold text-gray-900">Need Help with Login?</h3>
             </div>
-            
+
             <div className="space-y-3">
               <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200">
                 <p className="font-medium text-blue-900 text-sm mb-2">For Password Recovery:</p>
@@ -187,7 +187,7 @@ const LoginPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 text-center">
                 <p className="text-amber-800 font-medium text-sm">
                   Login credentials are provided by your school administration

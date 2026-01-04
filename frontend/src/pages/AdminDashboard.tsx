@@ -157,7 +157,7 @@ const AdminHome: React.FC<{ dashboardData: any }> = ({ dashboardData }) => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div className="mb-4 lg:mb-0">
             <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-              School Management Center
+              EDUNETGN Center
             </h1>
             <p className="text-blue-100 text-sm sm:text-base mb-3">
               Manage your school's students, teachers, schedules, and academic
@@ -634,14 +634,13 @@ const AdminHome: React.FC<{ dashboardData: any }> = ({ dashboardData }) => {
                           </div>
                         </div>
                         <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${
-                            event.priority === "high" ||
-                            event.priority === "urgent"
+                          className={`px-2 py-1 rounded text-xs font-medium ${event.priority === "high" ||
+                              event.priority === "urgent"
                               ? "bg-red-100 text-red-800"
                               : event.priority === "medium"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-green-100 text-green-800"
-                          }`}
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-green-100 text-green-800"
+                            }`}
                         >
                           {event.priority || "medium"}
                         </span>
@@ -801,11 +800,11 @@ const TeacherManagement: React.FC = () => {
     }
   };
 
-  const handleTeacherCreated = (_teacher: any) => {};
+  const handleTeacherCreated = (_teacher: any) => { };
 
-  const handleTeacherUpdated = (_teacher: any) => {};
+  const handleTeacherUpdated = (_teacher: any) => { };
 
-  const handleTeacherDeleted = (_teacherId: string) => {};
+  const handleTeacherDeleted = (_teacherId: string) => { };
 
   return (
     <div className="px-4 sm:px-0">

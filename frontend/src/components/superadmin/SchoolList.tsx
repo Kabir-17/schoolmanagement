@@ -325,10 +325,9 @@ const SchoolList: React.FC<SchoolListProps> = ({
             inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium
             border transition-all duration-200 hover:shadow-sm
             ${statusConfig.bg} ${statusConfig.color} ${statusConfig.border}
-            ${
-              isUpdating
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-opacity-80 cursor-pointer"
+            ${isUpdating
+              ? "opacity-50 cursor-not-allowed"
+              : "hover:bg-opacity-80 cursor-pointer"
             }
           `}
         >
@@ -339,9 +338,8 @@ const SchoolList: React.FC<SchoolListProps> = ({
           )}
           <span>{statusConfig.label}</span>
           <ChevronDown
-            className={`w-3 h-3 transition-transform ${
-              isOpen ? "rotate-180" : ""
-            }`}
+            className={`w-3 h-3 transition-transform ${isOpen ? "rotate-180" : ""
+              }`}
           />
         </button>
 
@@ -365,17 +363,15 @@ const SchoolList: React.FC<SchoolListProps> = ({
                     className={`
                       w-full flex items-center gap-3 px-3 py-2 text-sm text-left
                       transition-colors
-                      ${
-                        isCurrentStatus
-                          ? "bg-gray-50 text-gray-400 cursor-not-allowed"
-                          : "hover:bg-gray-50 text-gray-700 cursor-pointer"
+                      ${isCurrentStatus
+                        ? "bg-gray-50 text-gray-400 cursor-not-allowed"
+                        : "hover:bg-gray-50 text-gray-700 cursor-pointer"
                       }
                     `}
                   >
                     <OptionIcon
-                      className={`w-4 h-4 ${
-                        isCurrentStatus ? "text-gray-400" : option.color
-                      }`}
+                      className={`w-4 h-4 ${isCurrentStatus ? "text-gray-400" : option.color
+                        }`}
                     />
                     <span>{option.label}</span>
                     {isCurrentStatus && (
@@ -399,7 +395,7 @@ const SchoolList: React.FC<SchoolListProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            School Management
+            EDUNETGN
           </h1>
           <p className="text-gray-600">Manage all schools in the system</p>
         </div>
