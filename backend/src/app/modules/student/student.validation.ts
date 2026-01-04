@@ -132,17 +132,17 @@ const createStudentValidationSchema = z.object({
     }),
     studentCredentials: z
       .object({
-        username: z.string().min(3).max(50).trim().optional(),
-        password: z.string().min(6).max(50).optional(),
+        username: z.string().min(3).max(50).trim().optional().or(z.literal("")),
+        password: z.string().min(6).max(50).optional().or(z.literal("")),
       })
       .optional(),
     parentCredentials: z
       .object({
-        username: z.string().min(3).max(50).trim().optional(),
-        password: z.string().min(6).max(50).optional(),
+        username: z.string().min(3).max(50).trim().optional().or(z.literal("")),
+        password: z.string().min(6).max(50).optional().or(z.literal("")),
       })
       .optional(),
-  }),
+  }).passthrough(),
 });
 
 const updateStudentValidationSchema = z.object({
