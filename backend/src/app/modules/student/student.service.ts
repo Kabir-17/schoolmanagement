@@ -71,6 +71,10 @@ class StudentService {
     photos?: Express.Multer.File[],
     adminUserId?: string
   ): Promise<IStudentResponse> {
+    // Debug log to trace custom credentials
+    console.log("=== StudentService.createStudent - Checking custom credentials ===");
+    console.log("studentCredentials received:", JSON.stringify(studentData.studentCredentials, null, 2));
+    console.log("parentCredentials received:", JSON.stringify(studentData.parentCredentials, null, 2));
     const session = await mongoose.startSession();
     const uploadedPublicIds: string[] = [];
     let storedCredentialIds: Types.ObjectId[] = [];
